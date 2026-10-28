@@ -98,9 +98,11 @@ Modeline per document, relative to the file:
 
 ## Repo conventions on top of ESDM (LIMS)
 
-- Domain name: `lims`. CloudEvents types: `io.limventure.<bounded-context>.<aggregate>-<event>`
-  for domain events, `io.limventure.integration.<partner>.<event>` for integration
-  events (ADR-0005; exact scheme still TBD - check the ADR before using).
+- Domain name: `lims`. CloudEvents types always end in `.v<N>` (ADR-0023):
+  `io.limventure.<bounded-context>.<aggregate>-<event>.v1` for aggregate events,
+  `io.limventure.<bounded-context>.<event>.v1` for free-standing (DCB) events,
+  `io.limventure.integration.<partner>.<event>.v1` for integration events. A breaking
+  change is a new ESDM event `<event>-v2` with type `.v2` plus an upcaster.
 - Integration events are real events of dedicated aggregates (e.g. `inbound-message`,
   `outbound-message`); inbound translation = policy (ACL), outbound delivery = event
   handler with `external-call`, at-least-once, `idempotency.owner: downstream`.

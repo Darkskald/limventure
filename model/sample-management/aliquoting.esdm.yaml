@@ -120,4 +120,4 @@ data:
   required: [operationId, sourceSampleId, sourceContainerId, unit, aliquots]
 metadata:
   annotations:
-    cloudevents.type: io.limventure.sample-management.aliquoted
+    cloudevents.type: io.limventure.sample-management.aliquoted.v1

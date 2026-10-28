@@ -32,7 +32,7 @@ real events of dedicated aggregates, e.g. `inbound-message` (`received`,
 The ACL becomes a policy `inbound-message/received` → domain command; outbound becomes a
 policy domain event → `outbound-message/queue` plus an event handler on `queued`.
 Distinguish namespaces through `metadata.annotations.cloudevents.type`
-(`io.limventure.integration.<partner>.<event>` vs `io.limventure.<bounded-context>.<aggregate>-<event>`) and/or
+(`io.limventure.integration.<partner>.<event>.vN` vs `io.limventure.<bounded-context>.<aggregate>-<event>.vN`, [ADR-0023](../../adr/0023-event-types-carry-a-version-suffix.md)) and/or
 `metadata.labels` (`event-class: integration`). Labels are free-form and unchecked.
 
 Gap: the published-language payload is only the `data` JSON Schema of the integration

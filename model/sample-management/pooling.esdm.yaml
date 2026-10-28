@@ -117,4 +117,4 @@ data:
   required: [operationId, pooledSampleId, targetContainerId, unit, sources]
 metadata:
   annotations:
-    cloudevents.type: io.limventure.sample-management.pooled
+    cloudevents.type: io.limventure.sample-management.pooled.v1

@@ -82,7 +82,7 @@ data:
   required: [sampleId, matrix, expectedBy, deadlineSource]
 metadata:
   annotations:
-    cloudevents.type: io.limventure.sample-management.sample-expected
+    cloudevents.type: io.limventure.sample-management.sample-expected.v1
 ---
 # yaml-language-server: $schema=../schemas/core/v1.yaml
 apiVersion: schema.esdm.io/core/v1
@@ -111,7 +111,7 @@ data:
   required: [sampleId, reason]
 metadata:
   annotations:
-    cloudevents.type: io.limventure.sample-management.sample-expectation-cancelled
+    cloudevents.type: io.limventure.sample-management.sample-expectation-cancelled.v1
 ---
 # yaml-language-server: $schema=../schemas/core/v1.yaml
 apiVersion: schema.esdm.io/core/v1
@@ -139,7 +139,7 @@ data:
   required: [sampleId, expectedBy]
 metadata:
   annotations:
-    cloudevents.type: io.limventure.sample-management.sample-overdue
+    cloudevents.type: io.limventure.sample-management.sample-overdue.v1
 ---
 # yaml-language-server: $schema=../schemas/core/v1.yaml
 apiVersion: schema.esdm.io/core/v1
@@ -182,7 +182,7 @@ data:
   required: [sampleId, late]
 metadata:
   annotations:
-    cloudevents.type: io.limventure.sample-management.sample-received
+    cloudevents.type: io.limventure.sample-management.sample-received.v1
 ---
 # yaml-language-server: $schema=../schemas/core/v1.yaml
 apiVersion: schema.esdm.io/core/v1
@@ -211,4 +211,4 @@ data:
   required: [sampleId, reason]
 metadata:
   annotations:
-    cloudevents.type: io.limventure.sample-management.sample-disposed
+    cloudevents.type: io.limventure.sample-management.sample-disposed.v1
