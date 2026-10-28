@@ -42,6 +42,7 @@ tools/                    ← limtool, uv project, the deterministic toolbox
 | `esdm-modeling` | Domain modeling in ESDM |
 | `eventsourcingdb` | Local event store operations |
 | `upstream-feedback` | Verify and log findings on the tools under test |
+| `breakout` | Generate a LIMS-free harness for a new project on the same stack |
 
 ## Adding a skill
 

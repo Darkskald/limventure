@@ -3,16 +3,16 @@ from pathlib import Path
 from limtool import adr, docs
 
 GOOD = """---
-title: Sample handling
-summary: How samples move through the lab.
-tags: [sample, lifecycle]
+title: Order handling
+summary: How orders move through the shop.
+tags: [order, lifecycle]
 status: draft
 updated: 2026-10-28
 ---
 
-# Sample handling
+# Order handling
 
-See [other](other-doc.md). Aliquots matter.
+See [other](other-doc.md). Invoices matter.
 """
 
 
@@ -23,8 +23,8 @@ def write(root: Path, rel: str, text: str) -> None:
 
 
 def test_lint_clean(tmp_path: Path) -> None:
-    write(tmp_path, "domain/sample-handling.md", GOOD)
-    write(tmp_path, "domain/other-doc.md", GOOD.replace("other-doc.md", "sample-handling.md"))
+    write(tmp_path, "domain/order-handling.md", GOOD)
+    write(tmp_path, "domain/other-doc.md", GOOD.replace("other-doc.md", "order-handling.md"))
     errors, warnings = docs.lint(tmp_path)
     assert errors == [] and warnings == []
 
@@ -43,18 +43,18 @@ def test_lint_reports_problems(tmp_path: Path) -> None:
 
 
 def test_index_and_search(tmp_path: Path) -> None:
-    write(tmp_path, "domain/sample-handling.md", GOOD)
+    write(tmp_path, "domain/order-handling.md", GOOD)
     index = docs.render_index(tmp_path)
-    assert "[Sample handling](domain/sample-handling.md)" in index
-    hits = docs.search(tmp_path, ["aliquot"])
-    assert [d.rel for _, d in hits] == ["domain/sample-handling.md"]
-    assert docs.search(tmp_path, ["aliquot", "nonexistent"]) == []
-    assert docs.search(tmp_path, ["aliquot"], tag="billing") == []
+    assert "[Order handling](domain/order-handling.md)" in index
+    hits = docs.search(tmp_path, ["invoice"])
+    assert [d.rel for _, d in hits] == ["domain/order-handling.md"]
+    assert docs.search(tmp_path, ["invoice", "nonexistent"]) == []
+    assert docs.search(tmp_path, ["invoice"], tag="billing") == []
 
 
 def test_adr_numbering(tmp_path: Path) -> None:
     first = adr.create(tmp_path, "Use EventSourcingDB")
-    second = adr.create(tmp_path, "Tenant isolation!")
+    second = adr.create(tmp_path, "Event schema policy!")
     assert first.name == "0001-use-eventsourcingdb.md"
-    assert second.name == "0002-tenant-isolation.md"
+    assert second.name == "0002-event-schema-policy.md"
     assert "status: proposed" in second.read_text()

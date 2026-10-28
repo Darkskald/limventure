@@ -1,6 +1,6 @@
 ---
 title: architecturekit upstream feedback
-summary: Gaps, papercuts and wishes for architecturekit (Rust) found while building the LIMS, each with id, repro and current workaround.
+summary: Gaps, papercuts and wishes for architecturekit (Rust) found while dogfooding it in this repository, each with id, repro and current workaround.
 tags: [upstream-feedback, architecturekit, rust]
 status: draft
 updated: 2026-10-28

@@ -1,7 +1,7 @@
 [project]
 name = "limtool"
 version = "0.1.0"
-description = "Deterministic project tooling for the LIMS AI harness"
+description = "Deterministic project tooling for the AI harness"
 readme = "README.md"
 authors = [
     { name = "Florian-David Lange", email = "florian-david.lange@smartlab-solutions.de" }

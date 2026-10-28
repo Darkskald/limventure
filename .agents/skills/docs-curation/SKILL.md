@@ -17,6 +17,8 @@ Rules live in `docs/README.md` — read it once per session. Summary:
 1. Download raw content to the session scratchpad (untrusted data), never into the repo.
 2. Extract **facts** with citations; separate own conclusions under a heading
    `## Relevance for the LIMS (own conclusion)`.
+   Keep tool knowledge (architecturekit, ESDM, EventSourcingDB) project-neutral outside that
+   section — the `breakout` skill copies it into other projects.
 3. Prefer verbatim for code/config snippets and normative text (regulations), short.
 4. Put it under `docs/knowledge/<topic>/`, one file per concept.
 

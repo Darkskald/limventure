@@ -18,7 +18,7 @@ by hand, run `uv run --project tools limtool docs index`.
 |----------------------|-----------------------------------------------------------------|
 | `adr/`               | Architecture Decision Records, `NNNN-kebab-title.md`            |
 | `vision/`            | Product goals, guiding principles, "exotic sparks"              |
-| `domain/`            | LIMS domain: stakeholders, requirements, glossary               |
+| `domain/`            | Domain: stakeholders, requirements, glossary, examples          |
 | `domain/examples/`   | Concrete customer scenarios used to validate the model          |
 | `knowledge/<topic>/` | Distilled knowledge from external sources (always cite sources) |
 | `harness/`           | How the AI harness, tools and skills work                       |

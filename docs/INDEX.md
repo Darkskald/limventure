@@ -163,9 +163,9 @@
 
 | Document | Summary | Status | Tags |
 |---|---|---|---|
-| [architecturekit upstream feedback](upstream-feedback/architecturekit.md) | Gaps, papercuts and wishes for architecturekit (Rust) found while building the LIMS, each with id, repro and current workaround. | draft | upstream-feedback, architecturekit, rust |
-| [ESDM upstream feedback](upstream-feedback/esdm.md) | Gaps, papercuts and wishes for the ESDM language, schemas and CLI found while modeling the LIMS, each with id, repro and current workaround. | draft | upstream-feedback, esdm |
-| [EventSourcingDB upstream feedback](upstream-feedback/eventsourcingdb.md) | Gaps, papercuts and wishes for EventSourcingDB and its Rust SDK found while building the LIMS, each with id, repro and current workaround. | draft | upstream-feedback, eventsourcingdb, rust-sdk |
+| [architecturekit upstream feedback](upstream-feedback/architecturekit.md) | Gaps, papercuts and wishes for architecturekit (Rust) found while dogfooding it in this repository, each with id, repro and current workaround. | draft | upstream-feedback, architecturekit, rust |
+| [ESDM upstream feedback](upstream-feedback/esdm.md) | Gaps, papercuts and wishes for the ESDM language, schemas and CLI found while dogfooding it in this repository, each with id, repro and current workaround. | draft | upstream-feedback, esdm |
+| [EventSourcingDB upstream feedback](upstream-feedback/eventsourcingdb.md) | Gaps, papercuts and wishes for EventSourcingDB and its Rust SDK found while dogfooding it in this repository, each with id, repro and current workaround. | draft | upstream-feedback, eventsourcingdb, rust-sdk |
 | [Upstream upgrade log](upstream-feedback/upgrade-log.md) | Chronological record of every pinned-version upgrade of architecturekit, EventSourcingDB and ESDM, with what broke and which feedback ids it touched. | current | upstream-feedback, dependencies, versioning |
 
 ## vision

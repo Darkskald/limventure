@@ -1,0 +1,99 @@
+# Breakout manifest — what `limtool breakout` copies into a new project (skill: breakout).
+# Globs are fnmatch patterns against repo-relative paths (`*` also matches `/`).
+# Keep generic knowledge generic at the source: LIMS-specific conclusions go into
+# `## Relevance for the LIMS …` sections or `*lims*` files, which are stripped/excluded here.
+
+copy:
+  - .gitignore
+  - CLAUDE.md
+  - Cargo.toml
+  - .agents/skills/adr/*
+  - .agents/skills/docs-curation/*
+  - .agents/skills/esdm-modeling/*
+  - .agents/skills/eventsourcingdb/*
+  - .agents/skills/grill/*
+  - .agents/skills/upstream-feedback/*
+  - docs/README.md
+  - docs/adr/0006-*
+  - docs/harness/*
+  - docs/knowledge/architecturekit/*
+  - docs/knowledge/esdm/*
+  - docs/knowledge/eventsourcingdb/*
+  - docs/knowledge/sources.md
+  - docs/upstream-feedback/*
+  - infra/eventsourcingdb/*
+  - model/schemas/*
+  - tools/*
+
+exclude:
+  - docs/knowledge/*/*lims*
+  - tools/breakout/*
+  - tools/src/limtool/breakout.py
+  - tools/tests/test_breakout.py
+
+# Copied byte for byte (ESDM lint aborts if schemas drift from the binary).
+verbatim:
+  - model/schemas/*
+
+# Applied to paths and text, in order. {name} = project slug, {tool} = tool name.
+replace:
+  - [limventure, "{name}"]
+  - [limtool, "{tool}"]
+
+# Generic ADRs keep their content, the new project numbers them densely.
+# 0001, 0002, 0004, 0005 come from templates; 0006 (dual harness) is copied.
+adr_renumber:
+  "0006": "0003"
+  "0007": "0004"
+  "0008": "0005"
+
+# Per-glob renames applied before `replace`: turns the LIMS example domain of verified
+# examples into a neutral shop domain (consistent renames keep the YAML lint-clean).
+scoped_replace:
+  - glob: docs/knowledge/*
+    pairs:
+      - ["A physical specimen received by the laboratory, identified by its barcode.", "A customer order received by the shop, identified by its order number."]
+      - ["Ein physisches Untersuchungsobjekt, das das Labor erhält.", "Eine Kundenbestellung, die der Shop erhält."]
+      - ["term: Probe", "term: Bestellung"]
+      - ["### Probe", "### Bestellung"]
+      - ["Specimen", "Purchase"]
+      - ["laboratory-operations", "commerce"]
+      - ["[sample-reception, analysis]", "[order-intake, fulfilment]"]
+      - ["sample-reception", "order-intake"]
+      - ["boundedContext: analysis", "boundedContext: fulfilment"]
+      - ["bounded-context=analysis", "bounded-context=fulfilment"]
+      - ["lab-technician", "clerk"]
+      - ["sample-intake", "order-entry"]
+      - ["receiving-a-sample", "receiving-an-order"]
+      - ["Registers incoming samples at the reception desk.", "Registers incoming orders at the front desk."]
+      - ["sample events", "example events"]
+      - ["A sample", "An order"]
+      - ["a sample", "an order"]
+      - ["an announced sample", "an announced order"]
+      - ["view lims/", "view shop/"]
+      - ["domain: lims", "domain: shop"]
+      - ["domain=lims", "domain=shop"]
+      - ["name: lims", "name: shop"]
+      - ["Sample", "Order"]
+      - ["sample", "order"]
+  - glob: .agents/skills/*
+    pairs:
+      - ["Relevance for the LIMS", "Relevance for this project"]
+      - ["normative text (regulations)", "normative text (specs, standards)"]
+      - [" (ADR-0011, ADR-0012)", ""]
+      - [" (ADR-0010)", ""]
+  - glob: docs/upstream-feedback/*
+    pairs:
+      - ["(needed for expected events, ADR-0013)", "(needed for deadlines / expected events)"]
+      - ["(expected events, ADR-0013)", "(deadlines / expected events)"]
+      - ["; forces dedicated instances for GxP tenants (ADR-0004)", ""]
+      - ["[GDPR discussion](../discussions/gdpr-vs-immutable-log.md)", "crypto-shredding of personal data"]
+
+# Markdown sections whose heading matches are removed with their subsections.
+strip_sections: '(?i)^#{1,6} .*\b(LIMS|lab|regulat)'
+
+# Whole lines removed (e.g. workspace path deps of LIMS crates).
+drop_lines: '^lims-[a-z-]+ = \{ path|\]\(lims[a-z-]*(\.md|/)\)|^\| `breakout'
+
+# Residual references the agent must rewrite after generation.
+leak_terms: '\blims\b|lims-|laborator|\blab\b|margarine|\bgxp\b|17025|analyst|\bsamples?\b|aliquot|specimen|regulat|\bQA\b'

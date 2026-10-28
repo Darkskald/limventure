@@ -80,7 +80,7 @@ Modeline per document, relative to the file:
    Stop when the user confirms a restated summary.
 4. **Propose before writing.** List the artifacts (kind, name, file) and get a go.
 5. **Write.** Follow the cheat sheet shapes; copy field names from the schema.
-   - Events: bare past tense (`received`, not `sample-received`); add
+   - Events: bare past tense (`received`, not `order-received`); add
      `metadata.annotations.cloudevents.type`.
    - Commands: bare imperative (`receive`); `data` required (`{}` if none).
    - Cross-BC policy/read model/handler => add or reuse a context mapping.
@@ -96,7 +96,7 @@ Modeline per document, relative to the file:
    Unresolved questions => `docs/discussions/` (one file per question). Run
    `uv run --project tools limtool check` before declaring done.
 
-## Repo conventions on top of ESDM
+## Repo conventions on top of ESDM (LIMS)
 
 - Domain name: `lims`. CloudEvents types: `io.limventure.<bounded-context>.<aggregate>-<event>`
   for domain events, `io.limventure.integration.<partner>.<event>` for integration

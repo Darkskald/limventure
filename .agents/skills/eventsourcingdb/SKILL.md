@@ -1,6 +1,6 @@
 ---
 name: eventsourcingdb
-description: Start, stop, check and inspect the local EventSourcingDB used by the LIMS. Use when you need a running event store for development, tests, or to inspect events/subjects.
+description: Start, stop, check and inspect the local EventSourcingDB of this project. Use when you need a running event store for development, tests, or to inspect events/subjects.
 ---
 
 # EventSourcingDB (local)

@@ -26,6 +26,7 @@ uv run --project tools limtool <command>
 | `esdb up [--dev]` / `down` / `logs` | docker compose in `infra/eventsourcingdb/` | compose fails |
 | `esdb ping` | ping + verify API token using `infra/eventsourcingdb/.env` | unreachable/invalid |
 | `deps outdated` | compare exact upstream pins with latest releases (crates.io, Docker Hub, esdm.io) | any pin outdated |
+| `breakout <dir> --name <n> [--tool t]` | generate a LIMS-free harness for a new project from `tools/breakout/manifest.yaml` + templates; lists leaks | leaks remain |
 | `harness check` | CLAUDE.md import, skills symlink, SKILL.md frontmatter | wiring broken |
 
 ## Development

@@ -63,12 +63,15 @@ build a `limtool` subcommand (with tests) instead of doing it a third time.
 | `limtool esdm <args>`                           | Pinned ESDM CLI, runs in `model/` (`lint`, `view`, …) |
 | `limtool esdb up [--dev]` / `down` / `ping`     | Local EventSourcingDB                         |
 | `limtool deps outdated`                         | Upstream pins vs latest releases (ADR-0008)   |
+| `limtool breakout <dir> --name <n>`             | LIMS-free harness for a new project (skill `breakout`) |
 
 Prefix: `uv run --project tools`. Tool docs: [docs/harness/limtool.md](docs/harness/limtool.md).
 
 ## Rules
 
 - **English** for code, identifiers, docs, commits. End-user i18n is a product feature.
+- **Truncate long shell output** to save tokens: pipe through `head`/`tail`, `grep`, `wc -l`,
+  `--stat`, `cut -c1-160` or quiet flags; read full output only when the truncated part matters.
 - **Docs**: follow [docs/README.md](docs/README.md) — frontmatter, ≤150 lines, one topic per file,
   cite sources under `docs/knowledge/`. Run `limtool docs index` after adding/renaming docs.
 - **Events are facts**: past tense, never mutated, never deleted. Corrections are new events.
@@ -116,5 +119,6 @@ Prefix: `uv run --project tools`. Tool docs: [docs/harness/limtool.md](docs/harn
 | `esdm-modeling`     | Changing the domain model in `model/`                     |
 | `eventsourcingdb`   | Running/inspecting the local event store                  |
 | `upstream-feedback` | Remarks/friction about architecturekit, ESDB, ESDM        |
+| `breakout`          | Starting a new non-LIMS project on the same stack         |
 
 Claude Code additionally has the `esdb@thenativeweb` plugin skills (read/write events, EventQL).

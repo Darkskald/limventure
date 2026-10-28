@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from pathlib import Path
 
 from limtool import adr, deps, docs, esdb, esdm, harness
 from limtool.paths import docs_dir, repo_root
@@ -67,6 +68,19 @@ def cmd_deps_outdated(args: argparse.Namespace) -> int:
     return 1 if any(p.outdated for p in pins) else 0
 
 
+def cmd_breakout(args: argparse.Namespace) -> int:
+    from limtool import breakout  # optional module, not part of generated projects
+
+    report = breakout.generate(repo_root(), Path(args.target).resolve(), args.name, args.tool)
+    print(f"wrote {len(report.files)} files to {args.target}")
+    for leak in report.leaks[: args.limit]:
+        print(f"leak: {leak}")
+    if len(report.leaks) > args.limit:
+        print(f"… {len(report.leaks) - args.limit} more (use --limit)")
+    print(f"{len(report.leaks)} leaks" if report.leaks else "clean")
+    return 1 if report.leaks else 0
+
+
 def cmd_harness_check(args: argparse.Namespace) -> int:
     problems = harness.check(repo_root())
     for p in problems:
@@ -84,6 +98,15 @@ def cmd_check(args: argparse.Namespace) -> int:
     for name, code in results.items():
         print(f"{'ok  ' if code == 0 else 'FAIL'} {name}")
     return 1 if any(results.values()) else 0
+
+
+def add_breakout(sub: argparse._SubParsersAction) -> None:
+    p = sub.add_parser("breakout", help="generate a harness for a new project (skill: breakout)")
+    p.add_argument("target", help="empty or non-existent directory")
+    p.add_argument("--name", required=True, help="kebab-case project name")
+    p.add_argument("--tool", default="devtool", help="name of the generated tool (default: devtool)")
+    p.add_argument("--limit", type=int, default=40, help="max leaks to print")
+    p.set_defaults(func=cmd_breakout)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -117,6 +140,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_d = sub.add_parser("deps", help="upstream version pins (ADR-0008)").add_subparsers(required=True)
     p_d.add_parser("outdated", help="compare pins with latest releases").set_defaults(func=cmd_deps_outdated)
+
+    if (Path(__file__).parent / "breakout.py").exists():
+        add_breakout(sub)
 
     p_h = sub.add_parser("harness", help="harness consistency").add_subparsers(required=True)
     p_h.add_parser("check", help="verify CLAUDE.md/AGENTS.md/skills wiring").set_defaults(func=cmd_harness_check)
