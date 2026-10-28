@@ -1,0 +1,18 @@
+# Rust
+/target/
+
+# Python / uv
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Pinned external binaries (downloaded by limtool)
+/.tools/
+
+# Secrets
+.env
+!.env.example
+
+# Agent-local state
+.claude/settings.local.json

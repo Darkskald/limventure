@@ -1,0 +1,41 @@
+# EventSourcingDB – default mode: persistent data, free tier (no license), no UI.
+# Usage: see README.md in this directory.
+#
+# Notes:
+# - EventSourcingDB is configured via CLI flags only (no env-var config), so the
+#   token from .env is interpolated into `command` by Compose.
+# - Plain HTTP is bound to 127.0.0.1 only. For anything beyond a local machine,
+#   use HTTPS (--https-certificate-file / --https-private-key-file), see README.md.
+
+name: limventure-esdb
+
+services:
+  eventsourcingdb:
+    image: thenativeweb/eventsourcingdb:${ESDB_IMAGE_TAG:-1.2.0}
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${ESDB_HOST_PORT:-3000}:3000"
+    volumes:
+      - esdb-data:/var/lib/esdb
+      # - ./secrets:/etc/esdb:ro   # signing key / license, see README.md
+    command:
+      - run
+      - --api-token=${ESDB_API_TOKEN:?set ESDB_API_TOKEN in infra/eventsourcingdb/.env}
+      - --data-directory=/var/lib/esdb
+      - --http-enabled
+      - --https-enabled=false
+      # Optional event signing (Ed25519, PKCS#8 PEM). Mount the key and uncomment:
+      # - --signing-key-file=/etc/esdb/signing-key.pem
+      # Optional commercial license (needed above 25,000 events):
+      # - --license-file=/etc/esdb/license.lic
+    healthcheck:
+      # /api/v1/ping needs no token; busybox wget is present in the Alpine image.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/v1/ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  esdb-data:

@@ -1,0 +1,18 @@
+# Dev override: throw-away store (temporary data directory, wiped on shutdown)
+# plus the management UI. Never use for anything you want to keep.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# UI: http://localhost:${ESDB_HOST_PORT:-3000}  (log in with ESDB_API_TOKEN)
+
+services:
+  eventsourcingdb:
+    restart: "no"
+    volumes: !reset []
+    command: !override
+      - run
+      - --api-token=${ESDB_API_TOKEN:?set ESDB_API_TOKEN in infra/eventsourcingdb/.env}
+      - --data-directory-temporary
+      - --http-enabled
+      - --https-enabled=false
+      - --with-ui

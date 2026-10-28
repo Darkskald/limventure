@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=schemas/core/v1.yaml
+# Root of the LIMS domain model. Subdomains and bounded contexts are added via the
+# esdm-modeling skill after an interview with the product owner — not before.
+apiVersion: schema.esdm.io/core/v1
+kind: domain
+name: lims
