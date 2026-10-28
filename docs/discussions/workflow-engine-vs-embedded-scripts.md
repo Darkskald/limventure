@@ -8,6 +8,8 @@ updated: 2026-10-28
 
 # Open: workflow engine vs embedded scripts
 
+> Extensibility tiers decided in [ADR-0011](../adr/0011-extensibility-tiers.md) (config + formulas; no in-process plugins at launch). Workflow-engine question remains open.
+
 ## Question
 
 How do customers customize behavior — "when X happens, do Y" — without forking the core?

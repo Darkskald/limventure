@@ -23,7 +23,12 @@ Details on most items: [go vs rust gaps](../knowledge/architecturekit/go-vs-rust
 | AK-008 | Cross-subject uniqueness via EventQL precondition surfaces as 409 conflict, not as a domain refusal | — | open |
 | AK-009 | Logs via `log` only, no `tracing` spans | — | open |
 | AK-010 | Much guidance (time, publishing, batching) only documented in the Go README | — | open |
+| AK-011 | No timers / scheduled commands / durable scheduler (needed for expected events, ADR-0013) | own scheduler from projection of open expectations (planned) | open |
+| AK-012 | *PO.* `Command::subject()` returns `String`; there is **no `Subject` newtype in architecturekit or the eventsourcingdb crate**. `SubjectScheme::build` also **panics** on invalid values (`subject.rs:160`) and has no fallible `try_build`/`parse` → invalid ids from user input crash instead of refuse; ids can't be parsed back out of a subject. Wish: `Subject` newtype produced by a fallible scheme build, accepted by `Command`/`Precondition`/`Subjects` | `lims_kernel::subject()` returns `Result<String>` | open — confirmed |
+| AK-013 | *PO.* `Command::preconditions()` returns a fresh `Vec<Precondition>`. A `&'static` slice is not possible (preconditions own per-command subjects/event ids), and the allocation is negligible next to the HTTP round-trip — but `impl IntoIterator<Item = Precondition>` would allow arrays (`[p]`) with no API cost | — | open — partially confirmed (ergonomics, not perf) |
+| AK-014 | *PO.* No closure-based subscription. Filtering exists (`start_projection(Subjects, Arc<P>, CancellationToken, ProjectionOptions)` + event enum), but every handler needs a struct + `Projection` impl with `Event`/`Error` associated types. Wish: `store.on_event::<E>(subjects, \|env\| async { … })` (+ sync variant) returning `ProjectionRun` | — | open — confirmed (ergonomics) |
+| AK-015 | *PO.* CloudEvents fields underused: writes set `traceinfo: None` (`store.rs:632`) although projections *read* `traceparent` → traces never propagate write→read; `source` is fixed per `Store` (`Store::builder(client, source)`), so per-partner sources for inbound integration events (ADR-0005) need one store per source. Wish: traceparent from current span/context, per-command source override | separate stores per source (planned) | open — confirmed |
 
 ## Template
 
-`| AK-nnn | what, minimal repro | how we work around it (file:line) | open/reported/fixed |`
+`| AK-nnn | *origin.* what, minimal repro, verdict basis | how we work around it (file:line) | open/reported/fixed — verdict |`

@@ -24,4 +24,4 @@ Events are normally facts that have already happened. Interesting: also model th
 **expectation** of events that will happen in the future (e.g. "the delivery announced for
 14:00 is expected; the IR measurement is expected within 2 h"), so that absence, delay and
 overdue states become explicit, queryable and auditable.
-→ [Expected events](../discussions/expected-events.md)
+→ [ADR-0013](../adr/0013-expected-events-are-facts.md), [discussion](../discussions/expected-events.md)

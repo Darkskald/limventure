@@ -14,7 +14,7 @@ Versions tested: server 1.2.0, Rust SDK 4.0.4. Background: [knowledge/eventsourc
 | Id | Finding | Workaround here | State |
 |---|---|---|---|
 | ESDB-001 | Docs site describes unreleased ~1.3 (`preview`): `/api/v2`, hash v2, `--require-event-schemas` 404/absent in 1.2.0; no per-page version marker | verify every feature against pinned image | open |
-| ESDB-002 | Single API token, no users/roles/read-only tokens | access control in LIMS services, ESDB on isolated network | open |
+| ESDB-002 | Single API token, no users/roles/read-only tokens | access control in LIMS services, ESDB on isolated network; forces dedicated instances for GxP tenants (ADR-0004). Wish: per-subject-prefix tokens | open |
 | ESDB-003 | Event signature is server-side, recomputed on read, unverifiable after key rotation; no endpoint to fetch the public key | — | open |
 | ESDB-004 | No field for actor / action time / reason in the event envelope (`time` = write time) | audit data in payload (see AK-001) | open |
 | ESDB-005 | `audit-history` / `verify-store` return HTTP 200 before finishing; result only in last NDJSON line | parse last line | open |
@@ -26,6 +26,7 @@ Versions tested: server 1.2.0, Rust SDK 4.0.4. Background: [knowledge/eventsourc
 | ESDB-011 | Image has no built-in HEALTHCHECK | busybox `wget` in compose | open |
 | ESDB-012 | Rust SDK testcontainer defaults to `latest` tag | pin tag explicitly | open |
 | ESDB-013 | Restore only into empty DB, blocks I/O; killed restore leaves unstartable data dir | — | open |
+| ESDB-014 | No scheduled / delayed events or "fire at" mechanism (expected events, ADR-0013) | external scheduler writes `-overdue` with precondition | open |
 
 ## Template
 

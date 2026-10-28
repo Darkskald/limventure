@@ -25,6 +25,7 @@ uv run --project tools limtool <command>
 | `esdm install` | only download/verify the binary | checksum mismatch |
 | `esdb up [--dev]` / `down` / `logs` | docker compose in `infra/eventsourcingdb/` | compose fails |
 | `esdb ping` | ping + verify API token using `infra/eventsourcingdb/.env` | unreachable/invalid |
+| `deps outdated` | compare exact upstream pins with latest releases (crates.io, Docker Hub, esdm.io) | any pin outdated |
 | `harness check` | CLAUDE.md import, skills symlink, SKILL.md frontmatter | wiring broken |
 
 ## Development

@@ -2,11 +2,13 @@
 title: "Open: GDPR erasure vs immutable event log"
 summary: Personal data (analyst names, customer contacts, patient data in clinical labs) must be erasable under GDPR while events are immutable and audit-relevant.
 tags: [discussion, gdpr, privacy, audit-trail]
-status: draft
+status: superseded
 updated: 2026-10-28
 ---
 
 # Open: GDPR erasure vs immutable event log
+
+> **Resolved** by [ADR-0010](../adr/0010-no-personal-data-in-event-payloads.md): no personal data in event payloads.
 
 ## Tension
 

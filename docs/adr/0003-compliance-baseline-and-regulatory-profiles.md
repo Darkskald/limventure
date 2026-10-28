@@ -2,7 +2,7 @@
 title: "ADR-0003: Fixed compliance baseline plus configurable regulatory profiles"
 summary: The core always meets the strictest audit baseline (immutable attributable events, e-signature capability); regulation-specific rules are configurable, versioned, audited profiles per tenant.
 tags: [adr, compliance, audit-trail, e-signature, configuration, regulation]
-status: proposed
+status: accepted
 updated: 2026-10-28
 ---
 

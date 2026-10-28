@@ -18,7 +18,8 @@ Be direct, concise, slightly sarcastic if warranted — never rude, never vague.
    - *Audit*: Which events are produced? Who is the actor? Is a signature/reason required?
      What happens on correction? Retention?
    - *Tenancy*: Is it per tenant configurable? On-prem vs SaaS difference?
-   - *Extensibility*: Core feature or customer customization? Which extension point?
+   - *Extensibility*: Core feature or customization? Tier 1 config, tier 2 formula, or
+     out-of-process extension (ADR-0011, ADR-0012)? Does it touch a public contract?
    - *UX*: Which stakeholder, which screen, how many clicks, what is the happy path?
    - *Integration*: Which external system raises/consumes events? Who owns the contract?
 4. **Ask one question at a time**, with your recommended answer and its trade-off.
@@ -34,6 +35,7 @@ Be direct, concise, slightly sarcastic if warranted — never rude, never vague.
 
 - "Configurable" without saying who configures, when, and how it is validated/audited.
 - "Just store it" — without event name, subject and actor.
-- Deleting or overwriting data (events are immutable; GDPR needs a deliberate strategy).
+- Deleting or overwriting data (events are immutable).
+- Names, e-mails or other personal data in an event payload (ADR-0010).
 - Features with no named stakeholder.
 - Customer-specific logic proposed inside the core.

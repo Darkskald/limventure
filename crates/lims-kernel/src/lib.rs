@@ -72,6 +72,9 @@ impl fmt::Display for TenantId {
 
 /// Who caused an event: a person or an external/internal system.
 ///
+/// `id` is an opaque identifier (e.g. `person:<uuid>`), never a name or e-mail — personal
+/// data lives in the erasable person registry (ADR-0010).
+///
 /// A struct rather than an enum because architecturekit cannot derive JSON schemas for enums.
 /// upstream: AK-002
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Schema)]
@@ -126,6 +129,7 @@ impl Audit {
 
 /// Builds tenant-scoped subjects `/tenants/<tenant>/<context>/<aggregate>/<id>`.
 /// The only sanctioned way to construct a subject (ADR-0004).
+/// Fallible instead of `SubjectScheme::build`, which panics on invalid values — upstream: AK-012
 ///
 /// # Errors
 /// Returns [`KernelError::InvalidIdentifier`] if `id` contains characters not allowed in a subject.

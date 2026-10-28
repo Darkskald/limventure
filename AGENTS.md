@@ -62,6 +62,7 @@ build a `limtool` subcommand (with tests) instead of doing it a third time.
 | `limtool adr new "<title>"`                     | Scaffold next ADR                             |
 | `limtool esdm <args>`                           | Pinned ESDM CLI, runs in `model/` (`lint`, `view`, …) |
 | `limtool esdb up [--dev]` / `down` / `ping`     | Local EventSourcingDB                         |
+| `limtool deps outdated`                         | Upstream pins vs latest releases (ADR-0008)   |
 
 Prefix: `uv run --project tools`. Tool docs: [docs/harness/limtool.md](docs/harness/limtool.md).
 
@@ -75,6 +76,10 @@ Prefix: `uv run --project tools`. Tool docs: [docs/harness/limtool.md](docs/harn
   See [ADR-0003](docs/adr/0003-compliance-baseline-and-regulatory-profiles.md).
 - **Integration events** are persisted and audited like domain events, but kept in a
   separate namespace. See [ADR-0005](docs/adr/0005-integration-events-are-persisted.md).
+- **No personal data in event payloads** — people are opaque ids; names live in the erasable
+  person registry ([ADR-0010](docs/adr/0010-no-personal-data-in-event-payloads.md)).
+- **Published vs internal events**: only published integration events and the command API are
+  public contracts (versioned `.vN`, additive changes only) — [ADR-0012](docs/adr/0012-out-of-process-extensions.md).
 - **Tenancy** is explicit everywhere ([ADR-0004](docs/adr/0004-multi-tenancy-from-day-one.md)).
 - **Rust**: `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test` must pass.
 - **Python tools**: `uv run --project tools pytest` and `ruff check` must pass.
@@ -84,7 +89,8 @@ Prefix: `uv run --project tools`. Tool docs: [docs/harness/limtool.md](docs/harn
 
 - **EventSourcingDB docs describe the unreleased 1.3 (`preview`)**; we run the pinned 1.2.0.
   No `/api/v2`, hash v1 only. Verify every documented feature against the pinned image.
-- **architecturekit is 0.x with breaking releases several times a day** — pinned `=0.21.0`, bumped deliberately.
+- **architecturekit is 0.x with breaking releases several times a day** — pinned `=0.21.0`. All upstream pins are exact; an upgrade is its own commit plus an entry in
+  `docs/upstream-feedback/upgrade-log.md` ([ADR-0008](docs/adr/0008-exact-version-pins-with-deliberate-upgrades.md)).
   It writes no actor/reason metadata: every event embeds `lims_kernel::Audit`.
   Its `Schema` derive rejects enums, `tag`/`flatten`/`with` — use plain structs in event payloads.
 - **ESDB numbers are f64** — integers > 2^53 as strings. Events ≤ 64 KiB: files go to a blob
@@ -109,5 +115,6 @@ Prefix: `uv run --project tools`. Tool docs: [docs/harness/limtool.md](docs/harn
 | `docs-curation`     | Adding/splitting/indexing docs, distilling external sources |
 | `esdm-modeling`     | Changing the domain model in `model/`                     |
 | `eventsourcingdb`   | Running/inspecting the local event store                  |
+| `upstream-feedback` | Remarks/friction about architecturekit, ESDB, ESDM        |
 
 Claude Code additionally has the `esdb@thenativeweb` plugin skills (read/write events, EventQL).

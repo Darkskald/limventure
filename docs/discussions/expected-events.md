@@ -2,11 +2,13 @@
 title: "Open: modeling expected (future) events"
 summary: How to represent expectations of future events (deliveries, measurements, sign-offs) so that delay and absence become explicit, auditable facts.
 tags: [discussion, expected-events, deadlines, sla, process-manager]
-status: draft
+status: superseded
 updated: 2026-10-28
 ---
 
 # Open: modeling expected (future) events
+
+> Main question resolved by [ADR-0013](../adr/0013-expected-events-are-facts.md): expectations are facts; overdue escalates via tier-1 configuration.
 
 Origin: [exotic sparks](../vision/exotic-sparks.md).
 

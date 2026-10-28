@@ -103,7 +103,7 @@ mod tests {
             &tenant,
             "S-0001",
             "sunflower-oil",
-            Audit::by(Actor::user("jane")),
+            Audit::by(Actor::user("person:0001")),
         )
         .unwrap()
     }
@@ -112,7 +112,7 @@ mod tests {
     async fn refuses_duplicate_registration() {
         let existing = SampleEvent::Registered(SampleRegistered {
             matrix: "sunflower-oil".into(),
-            audit: Audit::by(Actor::user("jane")),
+            audit: Audit::by(Actor::user("person:0001")),
         });
         given(&register_sample(), [existing])
             .when(cmd())

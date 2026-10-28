@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from limtool import adr, docs, esdb, esdm, harness
+from limtool import adr, deps, docs, esdb, esdm, harness
 from limtool.paths import docs_dir, repo_root
 
 
@@ -59,6 +59,14 @@ def cmd_esdb(args: argparse.Namespace) -> int:
     return esdb.compose(root, compose_args[args.action], dev=args.dev)
 
 
+def cmd_deps_outdated(args: argparse.Namespace) -> int:
+    pins = deps.collect(repo_root())
+    for pin in pins:
+        state = "unknown" if pin.latest is None else ("OUTDATED" if pin.outdated else "ok")
+        print(f"{state:8} {pin.name:38} pinned {pin.pinned:8} latest {pin.latest or '?'}")
+    return 1 if any(p.outdated for p in pins) else 0
+
+
 def cmd_harness_check(args: argparse.Namespace) -> int:
     problems = harness.check(repo_root())
     for p in problems:
@@ -106,6 +114,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("action", choices=["up", "down", "logs", "ping"])
     p.add_argument("--dev", action="store_true", help="use throw-away dev profile")
     p.set_defaults(func=cmd_esdb)
+
+    p_d = sub.add_parser("deps", help="upstream version pins (ADR-0008)").add_subparsers(required=True)
+    p_d.add_parser("outdated", help="compare pins with latest releases").set_defaults(func=cmd_deps_outdated)
 
     p_h = sub.add_parser("harness", help="harness consistency").add_subparsers(required=True)
     p_h.add_parser("check", help="verify CLAUDE.md/AGENTS.md/skills wiring").set_defaults(func=cmd_harness_check)

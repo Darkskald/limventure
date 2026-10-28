@@ -10,9 +10,9 @@ license = "UNLICENSED"
 publish = false
 
 [workspace.dependencies]
-# architecturekit is 0.x with breaking minor releases — pin exactly, bump deliberately (ADR-0007).
+# Upstream tools under test are pinned exactly; upgrades are dedicated commits (ADR-0008).
 architecturekit = { version = "=0.21.0" }
-eventsourcingdb = "4.0.4"
+eventsourcingdb = "=4.0.4"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

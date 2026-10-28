@@ -41,6 +41,7 @@ tools/                    ← limtool, uv project, the deterministic toolbox
 | `docs-curation` | Writing, splitting, distilling docs |
 | `esdm-modeling` | Domain modeling in ESDM |
 | `eventsourcingdb` | Local event store operations |
+| `upstream-feedback` | Verify and log findings on the tools under test |
 
 ## Adding a skill
 
