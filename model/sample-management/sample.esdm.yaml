@@ -1,0 +1,214 @@
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: sample
+description: >
+  One stream per sample. Starts with `expected`, with `received` (unannounced sample), or
+  with the free-standing `aliquoted` / `pooled` written by the aliquoting and pooling DCBs
+  (ADR-0022); the state folds those too. `disposed` ends the lifecycle; corrections stay
+  possible as new events (ESDM-009 - no declarative terminal event yet).
+scope:
+  domain: lims
+  boundedContext: sample-management
+identifiedBy:
+  source: state
+  field: sampleId
+state:
+  type: object
+  properties:
+    sampleId: { type: string }
+    status:
+      type: string
+      enum: [expected, cancelled, received, disposed]
+    overdue: { type: boolean }
+    expectedBy: { type: string, format: date-time }
+    parentSampleIds:
+      type: array
+      items: { type: string }
+  required: [sampleId, status]
+invariants:
+  - name: expect-new-sample-only
+    rule: A sample can only be expected as the first event of its stream.
+  - name: receive-once
+    rule: A sample that has been received cannot be received again.
+  - name: cancel-open-expectation-only
+    rule: >
+      An expectation can only be cancelled while the sample is expected, i.e. neither
+      received nor cancelled.
+  - name: overdue-open-expectation-only
+    rule: >
+      A sample can only be marked overdue while it is expected and not yet marked overdue.
+  - name: dispose-present-sample-only
+    rule: >
+      Only a sample that is physically present (received, aliquoted or pooled) and not yet
+      disposed can be disposed.
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: expect
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    orderId: { type: string }
+    lotId: { type: string }
+    matrix: { type: string }
+    samplingPoint: { type: string }
+    expectedBy: { type: string, format: date-time }
+    deadlineSource:
+      type: string
+      description: Where the deadline comes from (specification, contract SLA, profile) and its version.
+  required: [sampleId, matrix, expectedBy, deadlineSource]
+publishes: [expected]
+actors: [requester, inspection-plan]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: expected
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    orderId: { type: string }
+    lotId: { type: string }
+    matrix: { type: string }
+    samplingPoint: { type: string }
+    expectedBy: { type: string, format: date-time }
+    deadlineSource: { type: string }
+  required: [sampleId, matrix, expectedBy, deadlineSource]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.sample-expected
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: cancel-expectation
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [sampleId, reason]
+publishes: [expectation-cancelled]
+actors: [requester, sample-receptionist]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: expectation-cancelled
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [sampleId, reason]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.sample-expectation-cancelled
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: mark-overdue
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+  required: [sampleId]
+publishes: [overdue]
+actors: [deadline-scheduler]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: overdue
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    expectedBy: { type: string, format: date-time }
+  required: [sampleId, expectedBy]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.sample-overdue
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: receive
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    orderId: { type: string }
+    lotId: { type: string }
+    matrix: { type: string }
+    samplingPoint: { type: string }
+    takenAt: { type: string, format: date-time }
+    takenBy: { type: string, description: Opaque person id (ADR-0010). }
+  required: [sampleId]
+publishes: [received]
+actors: [sample-receptionist]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: received
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+description: >
+  Fulfils an open expectation (flagged late when `overdue` preceded it) or starts the
+  stream of an unannounced sample.
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    orderId: { type: string }
+    lotId: { type: string }
+    matrix: { type: string }
+    samplingPoint: { type: string }
+    takenAt: { type: string, format: date-time }
+    takenBy: { type: string }
+    late: { type: boolean }
+  required: [sampleId, late]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.sample-received
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: dispose
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [sampleId, reason]
+publishes: [disposed]
+actors: [analyst, sample-receptionist]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: disposed
+scope: { domain: lims, boundedContext: sample-management, aggregate: sample }
+data:
+  type: object
+  properties:
+    sampleId: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [sampleId, reason]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.sample-disposed

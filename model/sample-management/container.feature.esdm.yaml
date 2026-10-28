@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=../schemas/given-when-then/v1.yaml
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: container-lifecycle
+scope:
+  domain: lims
+  boundedContext: sample-management
+  aggregate: container
+scenarios:
+  - name: labelled-container-is-filled
+    given:
+      - event: labelled
+        data: { containerId: C-1, label: "L-0001", containerType: bottle-250ml }
+    when:
+      command: fill
+      data: { containerId: C-1, sampleId: S-1, quantity: 200, unit: mL }
+      actor: sample-receptionist
+    then:
+      events:
+        - event: filled
+          data: { containerId: C-1, sampleId: S-1, quantity: 200, unit: mL }
+  - name: labelling-twice-is-refused
+    given:
+      - event: labelled
+        data: { containerId: C-1, label: "L-0001", containerType: bottle-250ml }
+    when:
+      command: label
+      data: { containerId: C-1, label: "L-0002", containerType: bottle-250ml }
+      actor: sample-receptionist
+    then:
+      rejection: { invariant: label-new-container-only }
+  - name: filling-an-unlabelled-container-is-refused
+    given: []
+    when:
+      command: fill
+      data: { containerId: C-9, sampleId: S-1, quantity: 10, unit: mL }
+      actor: sample-receptionist
+    then:
+      rejection: { invariant: labelled-container-only }
+  - name: moving-a-disposed-container-is-refused
+    given:
+      - event: labelled
+        data: { containerId: C-1, label: "L-0001", containerType: bottle-250ml }
+      - event: disposed
+        data: { containerId: C-1, reason: Broken. }
+    when:
+      command: move
+      data: { containerId: C-1, toLocationId: fridge-2 }
+      actor: analyst
+    then:
+      rejection: { invariant: not-disposed }
+  - name: filling-a-full-container-is-refused
+    given:
+      - event: labelled
+        data: { containerId: C-1, label: "L-0001", containerType: bottle-250ml }
+      - event: filled
+        data: { containerId: C-1, sampleId: S-1, quantity: 200, unit: mL }
+    when:
+      command: fill
+      data: { containerId: C-1, sampleId: S-2, quantity: 10, unit: mL }
+      actor: sample-receptionist
+    then:
+      rejection: { invariant: fill-empty-only }
+  - name: emptying-an-empty-container-is-refused
+    given:
+      - event: labelled
+        data: { containerId: C-1, label: "L-0001", containerType: bottle-250ml }
+    when:
+      command: empty
+      data: { containerId: C-1, reason: Cleanup. }
+      actor: analyst
+    then:
+      rejection: { invariant: content-required }
+  - name: withdrawing-more-than-remaining-is-refused
+    given:
+      - event: labelled
+        data: { containerId: C-1, label: "L-0001", containerType: bottle-250ml }
+      - event: filled
+        data: { containerId: C-1, sampleId: S-1, quantity: 200, unit: mL }
+      - event: withdrawn
+        data: { containerId: C-1, sampleId: S-1, quantity: 150, unit: mL }
+    when:
+      command: withdraw
+      data: { containerId: C-1, sampleId: S-1, quantity: 60, unit: mL }
+      actor: analyst
+    then:
+      rejection: { invariant: withdraw-within-quantity }
+  - name: placing-a-container-into-itself-is-refused
+    given:
+      - event: labelled
+        data: { containerId: P-1, label: "PLATE-01", containerType: plate-96 }
+    when:
+      command: place-in
+      data: { containerId: P-1, parentContainerId: P-1 }
+      actor: analyst
+    then:
+      rejection: { invariant: not-into-itself }

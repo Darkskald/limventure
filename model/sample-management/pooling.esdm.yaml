@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: dynamic-consistency-boundary
+name: pooling
+description: >
+  Combines quantities of two or more source samples into one new pooled sample in one
+  target container, as one atomic act (ADR-0022). `pooled` is written once to the new
+  sample, to every source container and to the target container, sharing the
+  `operationId`. Source samples are consulted but get no event.
+scope:
+  domain: lims
+  boundedContext: sample-management
+identifiedBy:
+  - { name: pooled-sample, source: command-payload, field: pooledSampleId }
+  - { name: target-container, source: command-payload, field: targetContainerId }
+  - { name: operation, source: command-payload, field: operationId }
+consults:
+  - boundedContext: sample-management
+    aggregate: sample
+    event: received
+    criteria: Events of every source sample and of the new pooled sample id.
+  - boundedContext: sample-management
+    aggregate: sample
+    event: disposed
+    criteria: Events of every source sample.
+  - boundedContext: sample-management
+    event: aliquoted
+    criteria: Events on every source sample, every source container, the target container and the new pooled sample id.
+  - boundedContext: sample-management
+    event: pooled
+    criteria: Events on every source sample, every source container, the target container and the new pooled sample id.
+  - boundedContext: sample-management
+    aggregate: container
+    event: labelled
+    criteria: Events of every source container and the target container.
+  - boundedContext: sample-management
+    aggregate: container
+    event: filled
+    criteria: Events of every source container and the target container.
+  - boundedContext: sample-management
+    aggregate: container
+    event: withdrawn
+    criteria: Events of every source container.
+  - boundedContext: sample-management
+    aggregate: container
+    event: emptied
+    criteria: Events of every source container and the target container.
+  - boundedContext: sample-management
+    aggregate: container
+    event: disposed
+    criteria: Events of every source container and the target container.
+invariants:
+  - name: at-least-two-sources
+    rule: A pool combines at least two distinct source samples.
+  - name: sources-present
+    rule: Every source sample is present (received, aliquot or pool) and not disposed.
+  - name: source-containers-hold-sources
+    rule: Every source container is labelled, not disposed and holds its source sample.
+  - name: sufficient-quantity
+    rule: Each source quantity, in its container's unit, does not exceed that container's remaining quantity.
+  - name: target-ready
+    rule: The target container is labelled, not disposed, empty and not one of the source containers.
+  - name: pooled-id-unused
+    rule: The new pooled sample id has no events yet.
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: pool
+scope: { domain: lims, boundedContext: sample-management, dynamicConsistencyBoundary: pooling }
+data:
+  type: object
+  properties:
+    operationId: { type: string }
+    pooledSampleId: { type: string }
+    targetContainerId: { type: string }
+    unit: { type: string }
+    sources:
+      type: array
+      minItems: 2
+      items:
+        type: object
+        properties:
+          sampleId: { type: string }
+          containerId: { type: string }
+          quantity: { type: number, exclusiveMinimum: 0 }
+        required: [sampleId, containerId, quantity]
+  required: [operationId, pooledSampleId, targetContainerId, unit, sources]
+publishes: [pooled]
+actors: [analyst]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: pooled
+scope: { domain: lims, boundedContext: sample-management }
+description: >
+  One physical pooling act. Written once per involved subject (new sample, each source
+  container, target container) with identical payload and `operationId` (ADR-0022).
+data:
+  type: object
+  properties:
+    operationId: { type: string }
+    pooledSampleId: { type: string }
+    targetContainerId: { type: string }
+    unit: { type: string }
+    sources:
+      type: array
+      minItems: 2
+      items:
+        type: object
+        properties:
+          sampleId: { type: string }
+          containerId: { type: string }
+          quantity: { type: number, exclusiveMinimum: 0 }
+        required: [sampleId, containerId, quantity]
+  required: [operationId, pooledSampleId, targetContainerId, unit, sources]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.pooled

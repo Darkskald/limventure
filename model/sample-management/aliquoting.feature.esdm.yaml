@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=../schemas/given-when-then/v1.yaml
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: aliquoting
+description: >
+  Background for all scenarios unless stated otherwise: sample S-1 received in container
+  C-1 with 10 mL; empty labelled targets T-1 and T-2.
+scope:
+  domain: lims
+  boundedContext: sample-management
+  dynamicConsistencyBoundary: aliquoting
+scenarios:
+  - name: two-aliquots-are-taken
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: vial-10ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-1, sampleId: S-1, quantity: 10, unit: mL } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: T-1, label: "L-2", containerType: vial-2ml } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: T-2, label: "L-3", containerType: vial-2ml } }
+    when:
+      command: aliquot
+      data:
+        operationId: OP-1
+        sourceSampleId: S-1
+        sourceContainerId: C-1
+        unit: mL
+        aliquots:
+          - { sampleId: A-1, containerId: T-1, quantity: 2 }
+          - { sampleId: A-2, containerId: T-2, quantity: 2 }
+      actor: analyst
+    then:
+      events:
+        - event: aliquoted
+          data:
+            operationId: OP-1
+            sourceSampleId: S-1
+            sourceContainerId: C-1
+            unit: mL
+            aliquots:
+              - { sampleId: A-1, containerId: T-1, quantity: 2 }
+              - { sampleId: A-2, containerId: T-2, quantity: 2 }
+  - name: disposed-source-sample-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: sample, event: disposed, data: { sampleId: S-1, reason: Spoiled. } }
+    when:
+      command: aliquot
+      data: { operationId: OP-2, sourceSampleId: S-1, sourceContainerId: C-1, unit: mL, aliquots: [{ sampleId: A-1, containerId: T-1, quantity: 2 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: source-sample-present }
+  - name: source-container-holding-another-sample-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: vial-10ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-1, sampleId: S-9, quantity: 10, unit: mL } }
+    when:
+      command: aliquot
+      data: { operationId: OP-3, sourceSampleId: S-1, sourceContainerId: C-1, unit: mL, aliquots: [{ sampleId: A-1, containerId: T-1, quantity: 2 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: source-container-holds-source-sample }
+  - name: overdrawing-the-source-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: vial-10ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-1, sampleId: S-1, quantity: 10, unit: mL } }
+      - { boundedContext: sample-management, aggregate: container, event: withdrawn, data: { containerId: C-1, sampleId: S-1, quantity: 9, unit: mL } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: T-1, label: "L-2", containerType: vial-2ml } }
+    when:
+      command: aliquot
+      data: { operationId: OP-4, sourceSampleId: S-1, sourceContainerId: C-1, unit: mL, aliquots: [{ sampleId: A-1, containerId: T-1, quantity: 2 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: sufficient-quantity }
+  - name: filled-target-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: vial-10ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-1, sampleId: S-1, quantity: 10, unit: mL } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: T-1, label: "L-2", containerType: vial-2ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: T-1, sampleId: S-5, quantity: 1, unit: mL } }
+    when:
+      command: aliquot
+      data: { operationId: OP-5, sourceSampleId: S-1, sourceContainerId: C-1, unit: mL, aliquots: [{ sampleId: A-1, containerId: T-1, quantity: 2 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: targets-ready }
+  - name: reused-aliquot-id-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: A-1, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: vial-10ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-1, sampleId: S-1, quantity: 10, unit: mL } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: T-1, label: "L-2", containerType: vial-2ml } }
+    when:
+      command: aliquot
+      data: { operationId: OP-6, sourceSampleId: S-1, sourceContainerId: C-1, unit: mL, aliquots: [{ sampleId: A-1, containerId: T-1, quantity: 2 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: aliquot-ids-unused }

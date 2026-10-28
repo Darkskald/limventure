@@ -1,0 +1,307 @@
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: container
+description: >
+  One stream per physical container (ADR-0017). Holds at most one sample at a time, with a
+  remaining quantity. The state also folds the free-standing `aliquoted` and `pooled`
+  events the DCBs write to this container's subject (ADR-0022). `disposed` ends the
+  lifecycle (ESDM-009). Uniqueness of the external barcode per tenant spans all containers
+  and is an open point of ADR-0022 - not enforced by this aggregate.
+scope:
+  domain: lims
+  boundedContext: sample-management
+identifiedBy:
+  source: state
+  field: containerId
+state:
+  type: object
+  properties:
+    containerId: { type: string }
+    label: { type: string }
+    externalBarcode: { type: string }
+    disposed: { type: boolean }
+    sampleId: { type: string }
+    quantity: { type: number, minimum: 0 }
+    unit: { type: string }
+    locationId: { type: string }
+    parentContainerId: { type: string }
+  required: [containerId, label, disposed]
+invariants:
+  - name: label-new-container-only
+    rule: A container is labelled exactly once, as the first event of its stream.
+  - name: labelled-container-only
+    rule: Every command except `label` requires a labelled container.
+  - name: not-disposed
+    rule: A disposed container cannot be relabelled, filled, withdrawn from, emptied, moved, placed or disposed again.
+  - name: fill-empty-only
+    rule: A container can only be filled while it holds no sample.
+  - name: content-required
+    rule: Withdrawing from or emptying a container requires that it holds a sample.
+  - name: withdraw-within-quantity
+    rule: >
+      A withdrawal must name the sample the container holds, use the container's unit and
+      not exceed the remaining quantity. Withdrawing everything leaves the container holding
+      the sample with quantity zero until it is emptied.
+  - name: not-into-itself
+    rule: A container cannot be placed into itself.
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: label
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    label: { type: string }
+    containerType: { type: string, description: Tenant-configured type, e.g. vial-10ml, plate-96. }
+    externalBarcode: { type: string }
+  required: [containerId, label, containerType]
+publishes: [labelled]
+actors: [sample-receptionist, analyst]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: labelled
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    label: { type: string }
+    containerType: { type: string }
+    externalBarcode: { type: string }
+  required: [containerId, label, containerType]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.container-labelled
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: relabel
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    label: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [containerId, label, reason]
+publishes: [relabelled]
+actors: [sample-receptionist, analyst]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: relabelled
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+description: A reprint or replacement label; same container, same stream.
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    label: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [containerId, label, reason]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.container-relabelled
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: fill
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+description: >
+  Puts a sample into an empty container, typically at receipt. Transfers between
+  containers are aliquoting or pooling, not fill.
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    sampleId: { type: string }
+    quantity: { type: number, exclusiveMinimum: 0 }
+    unit: { type: string }
+  required: [containerId, sampleId, quantity, unit]
+publishes: [filled]
+actors: [sample-receptionist]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: filled
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    sampleId: { type: string }
+    quantity: { type: number, exclusiveMinimum: 0 }
+    unit: { type: string }
+  required: [containerId, sampleId, quantity, unit]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.container-filled
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: withdraw
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+description: Takes a quantity out, e.g. for a test. Moving it into another container is aliquoting.
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    sampleId: { type: string }
+    quantity: { type: number, exclusiveMinimum: 0 }
+    unit: { type: string }
+    purpose: { type: string }
+  required: [containerId, sampleId, quantity, unit]
+publishes: [withdrawn]
+actors: [analyst]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: withdrawn
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    sampleId: { type: string }
+    quantity: { type: number, exclusiveMinimum: 0 }
+    unit: { type: string }
+    purpose: { type: string }
+  required: [containerId, sampleId, quantity, unit]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.container-withdrawn
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: empty
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [containerId, reason]
+publishes: [emptied]
+actors: [analyst, sample-receptionist]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: emptied
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+description: The container no longer holds its sample; any remaining quantity is discarded.
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    sampleId: { type: string }
+    discardedQuantity: { type: number, minimum: 0 }
+    reason: { type: string, minLength: 1 }
+  required: [containerId, sampleId, discardedQuantity, reason]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.container-emptied
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: move
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    toLocationId: { type: string }
+  required: [containerId, toLocationId]
+publishes: [moved]
+actors: [sample-receptionist, analyst]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: moved
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+description: Chain of custody step; the from-location is the state before the move.
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    fromLocationId: { type: string }
+    toLocationId: { type: string }
+  required: [containerId, toLocationId]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.container-moved
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: place-in
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    parentContainerId: { type: string }
+    position: { type: string, description: E.g. well A1 or rack slot 3. }
+  required: [containerId, parentContainerId]
+publishes: [placed-in]
+actors: [sample-receptionist, analyst]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: placed-in
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    parentContainerId: { type: string }
+    position: { type: string }
+  required: [containerId, parentContainerId]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.container-placed-in
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: dispose
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [containerId, reason]
+publishes: [disposed]
+actors: [analyst, sample-receptionist]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: disposed
+scope: { domain: lims, boundedContext: sample-management, aggregate: container }
+data:
+  type: object
+  properties:
+    containerId: { type: string }
+    reason: { type: string, minLength: 1 }
+  required: [containerId, reason]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.container-disposed

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: requester
+scope: { domain: lims, boundedContext: sample-management }
+type: human
+responsibilities:
+  - Announces samples they will send and cancels announcements that will not arrive.
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: inspection-plan
+scope: { domain: lims, boundedContext: sample-management }
+type: system
+responsibilities:
+  - Announces expected samples when a configured trigger fires (e.g. a delivery notice, ADR-0016).
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: deadline-scheduler
+scope: { domain: lims, boundedContext: sample-management }
+type: system
+responsibilities:
+  - Records that an expected sample is overdue when its deadline passes (ADR-0013).
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: sample-receptionist
+scope: { domain: lims, boundedContext: sample-management }
+type: human
+responsibilities:
+  - Receives samples, labels and fills containers, moves them to their location.
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: analyst
+scope: { domain: lims, boundedContext: sample-management }
+type: human
+responsibilities:
+  - Aliquots and pools samples, withdraws quantities for testing, disposes of material.

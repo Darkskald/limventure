@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../schemas/given-when-then/v1.yaml
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: sample-arrival-deadline
+scope:
+  domain: lims
+  processManager: await-sample
+scenarios:
+  - name: deadline-passes-and-instance-keeps-waiting
+    given:
+      - boundedContext: sample-management
+        aggregate: sample
+        event: expected
+        data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+    when:
+      timer: arrival-deadline
+    then:
+      emits:
+        - boundedContext: sample-management
+          aggregate: sample
+          command: mark-overdue
+          data: { sampleId: S-1 }
+  - name: late-receipt-ends-the-instance
+    given:
+      - boundedContext: sample-management
+        aggregate: sample
+        event: expected
+        data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+    when:
+      boundedContext: sample-management
+      aggregate: sample
+      event: received
+      data: { sampleId: S-1, late: true }
+    then:
+      ended: true
+  - name: cancellation-disarms-the-deadline
+    given:
+      - boundedContext: sample-management
+        aggregate: sample
+        event: expected
+        data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+    when:
+      boundedContext: sample-management
+      aggregate: sample
+      event: expectation-cancelled
+      data: { sampleId: S-1, reason: Delivery cancelled by supplier. }
+    then:
+      cancelTimers: [arrival-deadline]
+      ended: true

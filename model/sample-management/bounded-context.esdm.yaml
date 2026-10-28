@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: bounded-context
+name: sample-management
+description: >
+  Physical handling of samples and their containers: expectation, receipt, aliquoting,
+  pooling, location and disposal (ADR-0013, ADR-0017, ADR-0022). Tenant is the first
+  subject segment (ADR-0004); every event embeds `lims_kernel::Audit` with actor and
+  reason (ADR-0003, AK-001) - ESDM has no field for either, so they are not repeated in
+  the event schemas below. People are opaque ids (ADR-0010).
+scope:
+  domain: lims
+language: en
+ubiquitousLanguage:
+  - term: Sample
+    definition: >
+      The identity of a test item - what was taken, from where, when and for which order.
+      Not the vessel it sits in. Identified by a system-generated sample id per tenant.
+    avoid:
+      - term: Specimen
+      - term: Batch
+        reason: Collides with lot (goods) and lab batch (things processed together).
+  - term: Container
+    definition: >
+      A physical, labelled vessel that holds at most one sample at a time. Tubes, vials,
+      bottles, plates and wells are containers; containers nest (well in plate).
+    avoid:
+      - term: Vessel
+      - term: Tube
+        reason: One container type among many.
+  - term: Label
+    definition: >
+      The printed identifier of a container. The label identifies the container, not the
+      sample. A pre-printed customer barcode is an external barcode alias, unique per tenant.
+  - term: Expectation
+    definition: >
+      The fact that a sample is announced before it arrives, with the instant or window by
+      which it is expected (ADR-0013). Ends in exactly one of received, cancelled; overdue
+      is recorded but not terminal.
+    avoid:
+      - term: Announcement
+        reason: The fact is the expectation, not the act of announcing.
+  - term: Aliquot
+    definition: >
+      A new sample derived from a source sample by transferring a quantity from the source
+      container into a new target container. The aliquot keeps lineage to its parent.
+    avoid:
+      - term: Subsample
+      - term: Derived sample
+        reason: Too generic; pooled samples are derived too.
+  - term: Pooled sample
+    definition: >
+      A new sample made by combining quantities of two or more source samples into one
+      target container. Keeps lineage to all sources.
+    avoid:
+      - term: Composite sample
+      - term: Mixed sample
+  - term: Location
+    definition: >
+      Where a container physically is (reception desk, fridge, pneumatic tube). Opaque id
+      in this context; a storage model is out of scope.
+  - term: Operation
+    definition: >
+      One physical act touching several samples and containers, written atomically and
+      grouped by its operation id (ADR-0022).

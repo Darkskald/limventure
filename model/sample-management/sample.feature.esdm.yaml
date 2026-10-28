@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=../schemas/given-when-then/v1.yaml
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: sample-lifecycle
+scope:
+  domain: lims
+  boundedContext: sample-management
+  aggregate: sample
+scenarios:
+  - name: expected-sample-is-received-on-time
+    given:
+      - event: expected
+        data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+    when:
+      command: receive
+      data: { sampleId: S-1 }
+      actor: sample-receptionist
+    then:
+      events:
+        - event: received
+          data: { sampleId: S-1, late: false }
+  - name: overdue-sample-is-received-late
+    given:
+      - event: expected
+        data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+      - event: overdue
+        data: { sampleId: S-1, expectedBy: "2026-11-02T08:00:00Z" }
+    when:
+      command: receive
+      data: { sampleId: S-1 }
+      actor: sample-receptionist
+    then:
+      events:
+        - event: received
+          data: { sampleId: S-1, late: true }
+  - name: unannounced-sample-is-received
+    given: []
+    when:
+      command: receive
+      data: { sampleId: S-2, matrix: polyol }
+      actor: sample-receptionist
+    then:
+      events:
+        - event: received
+          data: { sampleId: S-2, matrix: polyol, late: false }
+  - name: expecting-an-existing-sample-is-refused
+    given:
+      - event: received
+        data: { sampleId: S-1, late: false }
+    when:
+      command: expect
+      data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+      actor: requester
+    then:
+      rejection: { invariant: expect-new-sample-only }
+  - name: second-receipt-is-refused
+    given:
+      - event: received
+        data: { sampleId: S-1, late: false }
+    when:
+      command: receive
+      data: { sampleId: S-1 }
+      actor: sample-receptionist
+    then:
+      rejection: { invariant: receive-once }
+  - name: cancelling-a-received-sample-is-refused
+    given:
+      - event: expected
+        data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+      - event: received
+        data: { sampleId: S-1, late: false }
+    when:
+      command: cancel-expectation
+      data: { sampleId: S-1, reason: Truck rerouted. }
+      actor: requester
+    then:
+      rejection: { invariant: cancel-open-expectation-only }
+  - name: marking-overdue-twice-is-refused
+    given:
+      - event: expected
+        data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+      - event: overdue
+        data: { sampleId: S-1, expectedBy: "2026-11-02T08:00:00Z" }
+    when:
+      command: mark-overdue
+      data: { sampleId: S-1 }
+      actor: deadline-scheduler
+    then:
+      rejection: { invariant: overdue-open-expectation-only }
+  - name: disposing-an-expected-sample-is-refused
+    given:
+      - event: expected
+        data: { sampleId: S-1, matrix: margarine, expectedBy: "2026-11-02T08:00:00Z", deadlineSource: "contract:C-7@3" }
+    when:
+      command: dispose
+      data: { sampleId: S-1, reason: Not needed. }
+      actor: analyst
+    then:
+      rejection: { invariant: dispose-present-sample-only }

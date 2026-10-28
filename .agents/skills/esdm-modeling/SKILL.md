@@ -41,7 +41,7 @@ model/
 ├── domain.esdm.yaml              # domain (+ subdomains)
 ├── external-systems.esdm.yaml    # flat catalog of external systems
 ├── <bounded-context>/            # one directory per BC - never per kind
-│   ├── bounded-context.esdm.yaml # incl. ubiquitousLanguage (en + de translations)
+│   ├── bounded-context.esdm.yaml # incl. ubiquitousLanguage (English only, no translations)
 │   ├── actors.esdm.yaml
 │   ├── <unit>.esdm.yaml          # aggregate or DCB + its commands + events
 │   ├── <unit>.feature.esdm.yaml  # given-when-then next to its unit
@@ -66,7 +66,7 @@ Modeline per document, relative to the file:
 3. **Interview - one question at a time** (combine with the `grill` skill; use its
    `Q: … - Recommendation: … - Cost: …` format). Phrase questions in schema
    vocabulary. Cover, as relevant:
-   - which bounded context; its terms (canonical term, rejected terms, German translation);
+   - which bounded context; its terms (canonical term, rejected terms; English only, no translations);
    - actors (`human`/`system`) and which commands each may issue / queries each may run;
    - events (past tense facts) and the commands that publish them;
    - the consistency boundary: aggregate (one id, lifecycle) or DCB (rule spans ids

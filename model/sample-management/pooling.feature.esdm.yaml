@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=../schemas/given-when-then/v1.yaml
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: pooling
+scope:
+  domain: lims
+  boundedContext: sample-management
+  dynamicConsistencyBoundary: pooling
+scenarios:
+  - name: two-samples-are-pooled
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-2, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: bottle-250ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-1, sampleId: S-1, quantity: 100, unit: g } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-2, label: "L-2", containerType: bottle-250ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-2, sampleId: S-2, quantity: 100, unit: g } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: T-1, label: "L-3", containerType: bottle-250ml } }
+    when:
+      command: pool
+      data:
+        operationId: OP-1
+        pooledSampleId: P-1
+        targetContainerId: T-1
+        unit: g
+        sources:
+          - { sampleId: S-1, containerId: C-1, quantity: 50 }
+          - { sampleId: S-2, containerId: C-2, quantity: 50 }
+      actor: analyst
+    then:
+      events:
+        - event: pooled
+          data:
+            operationId: OP-1
+            pooledSampleId: P-1
+            targetContainerId: T-1
+            unit: g
+            sources:
+              - { sampleId: S-1, containerId: C-1, quantity: 50 }
+              - { sampleId: S-2, containerId: C-2, quantity: 50 }
+  - name: pooling-one-sample-twice-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+    when:
+      command: pool
+      data: { operationId: OP-2, pooledSampleId: P-1, targetContainerId: T-1, unit: g, sources: [{ sampleId: S-1, containerId: C-1, quantity: 10 }, { sampleId: S-1, containerId: C-1, quantity: 10 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: at-least-two-sources }
+  - name: disposed-source-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-2, late: false } }
+      - { boundedContext: sample-management, aggregate: sample, event: disposed, data: { sampleId: S-2, reason: Spoiled. } }
+    when:
+      command: pool
+      data: { operationId: OP-3, pooledSampleId: P-1, targetContainerId: T-1, unit: g, sources: [{ sampleId: S-1, containerId: C-1, quantity: 10 }, { sampleId: S-2, containerId: C-2, quantity: 10 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: sources-present }
+  - name: source-container-not-holding-source-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-2, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: bottle-250ml } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-2, label: "L-2", containerType: bottle-250ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-2, sampleId: S-2, quantity: 100, unit: g } }
+    when:
+      command: pool
+      data: { operationId: OP-4, pooledSampleId: P-1, targetContainerId: T-1, unit: g, sources: [{ sampleId: S-1, containerId: C-1, quantity: 10 }, { sampleId: S-2, containerId: C-2, quantity: 10 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: source-containers-hold-sources }
+  - name: overdrawing-a-source-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-2, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: bottle-250ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-1, sampleId: S-1, quantity: 5, unit: g } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-2, label: "L-2", containerType: bottle-250ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-2, sampleId: S-2, quantity: 100, unit: g } }
+    when:
+      command: pool
+      data: { operationId: OP-5, pooledSampleId: P-1, targetContainerId: T-1, unit: g, sources: [{ sampleId: S-1, containerId: C-1, quantity: 10 }, { sampleId: S-2, containerId: C-2, quantity: 10 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: sufficient-quantity }
+  - name: target-among-sources-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-1, late: false } }
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: S-2, late: false } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-1, label: "L-1", containerType: bottle-250ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-1, sampleId: S-1, quantity: 100, unit: g } }
+      - { boundedContext: sample-management, aggregate: container, event: labelled, data: { containerId: C-2, label: "L-2", containerType: bottle-250ml } }
+      - { boundedContext: sample-management, aggregate: container, event: filled, data: { containerId: C-2, sampleId: S-2, quantity: 100, unit: g } }
+    when:
+      command: pool
+      data: { operationId: OP-6, pooledSampleId: P-1, targetContainerId: C-1, unit: g, sources: [{ sampleId: S-1, containerId: C-1, quantity: 10 }, { sampleId: S-2, containerId: C-2, quantity: 10 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: target-ready }
+  - name: reused-pooled-id-is-refused
+    given:
+      - { boundedContext: sample-management, aggregate: sample, event: received, data: { sampleId: P-1, late: false } }
+    when:
+      command: pool
+      data: { operationId: OP-7, pooledSampleId: P-1, targetContainerId: T-1, unit: g, sources: [{ sampleId: S-1, containerId: C-1, quantity: 10 }, { sampleId: S-2, containerId: C-2, quantity: 10 }] }
+      actor: analyst
+    then:
+      rejection: { invariant: pooled-id-unused }

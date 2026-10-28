@@ -1,0 +1,123 @@
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: dynamic-consistency-boundary
+name: aliquoting
+description: >
+  Splits a quantity of a source sample into new aliquot samples in new target containers,
+  as one atomic act (ADR-0022). EventSourcingDB 1.2.0 has one subject per event
+  (ESDB-016), so `aliquoted` is written once to each new sample, to the source container
+  and to each target container, in one write with one precondition per consulted subject;
+  all copies share the `operationId`. The source sample is consulted but gets no event.
+scope:
+  domain: lims
+  boundedContext: sample-management
+identifiedBy:
+  - { name: source-sample, source: command-payload, field: sourceSampleId }
+  - { name: source-container, source: command-payload, field: sourceContainerId }
+  - { name: operation, source: command-payload, field: operationId }
+consults:
+  - boundedContext: sample-management
+    aggregate: sample
+    event: received
+    criteria: Events of the source sample and of every new aliquot sample id.
+  - boundedContext: sample-management
+    aggregate: sample
+    event: disposed
+    criteria: Events of the source sample.
+  - boundedContext: sample-management
+    event: aliquoted
+    criteria: Events on the source sample, the source container, every target container and every new aliquot sample id.
+  - boundedContext: sample-management
+    event: pooled
+    criteria: Events on the source sample, the source container, every target container and every new aliquot sample id.
+  - boundedContext: sample-management
+    aggregate: container
+    event: labelled
+    criteria: Events of the source container and every target container.
+  - boundedContext: sample-management
+    aggregate: container
+    event: filled
+    criteria: Events of the source container and every target container.
+  - boundedContext: sample-management
+    aggregate: container
+    event: withdrawn
+    criteria: Events of the source container.
+  - boundedContext: sample-management
+    aggregate: container
+    event: emptied
+    criteria: Events of the source container and every target container.
+  - boundedContext: sample-management
+    aggregate: container
+    event: disposed
+    criteria: Events of the source container and every target container.
+invariants:
+  - name: source-sample-present
+    rule: The source sample is received (or itself an aliquot or pool) and not disposed.
+  - name: source-container-holds-source-sample
+    rule: The source container is labelled, not disposed and currently holds the source sample.
+  - name: sufficient-quantity
+    rule: >
+      The sum of all aliquot quantities, in the source container's unit, does not exceed its
+      remaining quantity.
+  - name: targets-ready
+    rule: >
+      Every target container is labelled, not disposed, empty, distinct from the source
+      container and used for exactly one aliquot.
+  - name: aliquot-ids-unused
+    rule: Every new aliquot sample id has no events yet.
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: aliquot
+scope: { domain: lims, boundedContext: sample-management, dynamicConsistencyBoundary: aliquoting }
+data:
+  type: object
+  properties:
+    operationId: { type: string }
+    sourceSampleId: { type: string }
+    sourceContainerId: { type: string }
+    unit: { type: string }
+    aliquots:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        properties:
+          sampleId: { type: string }
+          containerId: { type: string }
+          quantity: { type: number, exclusiveMinimum: 0 }
+        required: [sampleId, containerId, quantity]
+  required: [operationId, sourceSampleId, sourceContainerId, unit, aliquots]
+publishes: [aliquoted]
+actors: [analyst]
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: aliquoted
+scope: { domain: lims, boundedContext: sample-management }
+description: >
+  One physical aliquoting act. Written once per involved subject (each new sample, source
+  container, each target container) with identical payload and `operationId` (ADR-0022).
+data:
+  type: object
+  properties:
+    operationId: { type: string }
+    sourceSampleId: { type: string }
+    sourceContainerId: { type: string }
+    unit: { type: string }
+    aliquots:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        properties:
+          sampleId: { type: string }
+          containerId: { type: string }
+          quantity: { type: number, exclusiveMinimum: 0 }
+        required: [sampleId, containerId, quantity]
+  required: [operationId, sourceSampleId, sourceContainerId, unit, aliquots]
+metadata:
+  annotations:
+    cloudevents.type: io.limventure.sample-management.aliquoted

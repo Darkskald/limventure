@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: sample-whereabouts
+description: One row per sample - status, current container, location and lineage. Answers "where is sample X".
+scope:
+  domain: lims
+  boundedContext: sample-management
+paradigm: tabular
+schema:
+  type: array
+  items:
+    type: object
+    properties:
+      sampleId: { type: string }
+      status: { type: string, enum: [expected, cancelled, received, disposed] }
+      overdue: { type: boolean }
+      late: { type: boolean }
+      containerId: { type: string }
+      containerLabel: { type: string }
+      quantity: { type: number }
+      unit: { type: string }
+      locationId: { type: string }
+      parentSampleIds:
+        type: array
+        items: { type: string }
+    required: [sampleId, status]
+projections:
+  - { boundedContext: sample-management, aggregate: sample, event: expected, rule: "Add a row with status `expected`." }
+  - { boundedContext: sample-management, aggregate: sample, event: expectation-cancelled, rule: "Set status `cancelled`." }
+  - { boundedContext: sample-management, aggregate: sample, event: overdue, rule: "Set `overdue`." }
+  - { boundedContext: sample-management, aggregate: sample, event: received, rule: "Add or update the row; status `received`, copy `late`." }
+  - { boundedContext: sample-management, aggregate: sample, event: disposed, rule: "Set status `disposed`." }
+  - { boundedContext: sample-management, aggregate: container, event: labelled, rule: "Remember the label of the container for later rows." }
+  - { boundedContext: sample-management, aggregate: container, event: relabelled, rule: "Update `containerLabel` of the row whose container it is." }
+  - { boundedContext: sample-management, aggregate: container, event: filled, rule: "Set container, label, quantity, unit and location of the sample's row." }
+  - { boundedContext: sample-management, aggregate: container, event: withdrawn, rule: "Reduce `quantity` of the sample's row." }
+  - { boundedContext: sample-management, aggregate: container, event: emptied, rule: "Clear container, quantity and location of the sample's row." }
+  - { boundedContext: sample-management, aggregate: container, event: moved, rule: "Set `locationId` of the row whose container moved." }
+  - { boundedContext: sample-management, aggregate: container, event: placed-in, rule: "Inherit the parent container's location for the row whose container was placed." }
+  - { boundedContext: sample-management, aggregate: container, event: disposed, rule: "Clear the container of the row that still references it." }
+  - { boundedContext: sample-management, event: aliquoted, rule: "Once per operationId: add a received row per aliquot with its container and parent; reduce the source row's quantity." }
+  - { boundedContext: sample-management, event: pooled, rule: "Once per operationId: add a received row for the pooled sample with all parents; reduce each source row's quantity." }
+---
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: find-sample-whereabouts
+scope:
+  domain: lims
+  boundedContext: sample-management
+readModel: sample-whereabouts
+parameters:
+  type: object
+  properties:
+    sampleId: { type: string }
+    status: { type: string }
+    overdue: { type: boolean }
+result:
+  type: array
+  items: { type: object }
+actors: [sample-receptionist, analyst, requester]
+constraints:
+  - name: filter
+    rule: Filter by `sampleId`, `status` and `overdue` when given; `requester` sees only samples of their own orders.

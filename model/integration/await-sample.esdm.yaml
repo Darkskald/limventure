@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=../schemas/core/v1.yaml
+apiVersion: schema.esdm.io/core/v1
+kind: process-manager
+name: await-sample
+description: >
+  Durable deadline for an expected sample (ADR-0013). Overdue is recorded but not
+  terminal: the instance ends only on receipt or cancellation, so a late receipt is still
+  matched. Needs a durable scheduler that architecturekit does not provide (AK-011).
+scope:
+  domain: lims
+deliveryGuarantee: at-least-once
+idempotency:
+  owner: downstream
+  strategy: >
+    `mark-overdue` is refused by the sample's `overdue-open-expectation-only` invariant
+    when repeated or when the sample was received or cancelled in the meantime.
+correlatedBy:
+  source: event-field
+  field: sampleId
+state:
+  type: object
+  properties:
+    sampleId: { type: string }
+    expectedBy: { type: string, format: date-time }
+    closed: { type: boolean }
+  required: [sampleId, expectedBy, closed]
+startsWhen:
+  - { boundedContext: sample-management, aggregate: sample, event: expected }
+endsWhen:
+  - name: received
+    condition: The sample was received.
+  - name: cancelled
+    condition: The expectation was cancelled.
+timers:
+  - name: arrival-deadline
+    at: expectedBy
+reactions:
+  - when: { boundedContext: sample-management, aggregate: sample, event: expected }
+    rule: Store `expectedBy` and arm the arrival deadline.
+    setTimers: [arrival-deadline]
+  - when: { timer: arrival-deadline }
+    rule: Record that the sample is overdue; keep waiting for receipt or cancellation.
+    emits:
+      - { boundedContext: sample-management, aggregate: sample, command: mark-overdue }
+  - when: { boundedContext: sample-management, aggregate: sample, event: received }
+    rule: Close the instance and cancel the deadline if still armed.
+    cancelTimers: [arrival-deadline]
+  - when: { boundedContext: sample-management, aggregate: sample, event: expectation-cancelled }
+    rule: Close the instance and cancel the deadline if still armed.
+    cancelTimers: [arrival-deadline]
